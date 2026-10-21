@@ -5,7 +5,7 @@ import os
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ..manifest.item import SupportFile
 from ..manifest.sourcefile import SourceFile
@@ -54,6 +54,7 @@ MANIFEST.json.
 logger = logging.getLogger(__name__)
 
 MANIFEST_FILE_NAME = "WEB_FEATURES_MANIFEST.json"
+TEST262_DIR = os.path.join("third_party", "test262")
 
 
 def abs_path(path: str) -> str:
@@ -131,13 +132,15 @@ def map_tests_to_web_features(
     inherited_features = prev_inherited_features.copy()
 
     rel_dir_path = os.path.relpath(current_dir, cmd_cfg.repo_root)
+    if rel_dir_path == TEST262_DIR:
+        return
 
     web_feature_yml_full_path = os.path.join(current_dir, WEB_FEATURES_YML_FILENAME)
     web_feature_file: Optional[WebFeaturesFile] = None
     if os.path.isfile(web_feature_yml_full_path):
         try:
-            web_feature_file = WebFeaturesFile(load_data_to_dict(
-                open(web_feature_yml_full_path, "rb")))
+            with open(web_feature_yml_full_path, "rb") as f:
+                web_feature_file = WebFeaturesFile(load_data_to_dict(f))
         except Exception as e:
             raise e
 
@@ -154,6 +157,39 @@ def map_tests_to_web_features(
             result,
             inherited_features
         )
+
+def map_test262_tests_to_web_features(cmd_cfg: CmdConfig, result: WebFeaturesMap) -> None:
+    """
+    Maps vendored Test262 tests to web-features using the manifest committed
+    by the Test262 sync, translating its Test262 paths to WPT test URLs.
+
+    Args:
+        cmd_cfg (CmdConfig): The configuration for the command-line options.
+        result (WebFeaturesMap): The object to store the mapping results.
+    """
+    manifest_path = os.path.join(cmd_cfg.repo_root, TEST262_DIR, MANIFEST_FILE_NAME)
+    if not os.path.isfile(manifest_path):
+        logger.warning("No Test262 web-features manifest found at %s", manifest_path)
+        return
+
+    with open(manifest_path) as f:
+        test262_manifest = json.load(f)
+
+    path_to_feature_ids: Dict[str, List[str]] = {}
+    for feature_id, paths in test262_manifest["data"].items():
+        for path in paths:
+            path_to_feature_ids.setdefault(os.path.normpath(path), []).append(feature_id)
+
+    for path, feature_ids in sorted(path_to_feature_ids.items()):
+        rel_file_path = os.path.join(TEST262_DIR, path)
+        if not os.path.isfile(os.path.join(cmd_cfg.repo_root, rel_file_path)):
+            logger.warning("Test262 web-features manifest lists missing file %s", rel_file_path)
+            continue
+        item_type, manifest_items = SourceFile(
+            cmd_cfg.repo_root, rel_file_path, cmd_cfg.url_base).manifest_items()
+        if item_type == SupportFile.item_type:
+            continue
+        result.add(feature_ids, manifest_items)
 
 class WebFeatureManifestEncoder(json.JSONEncoder):
     """
@@ -201,6 +237,7 @@ def main(venv: Any = None, **kwargs: Any) -> int:
     cmd_cfg = CmdConfig(repo_root, url_base)
     feature_map = WebFeaturesMap()
     map_tests_to_web_features(cmd_cfg, "", feature_map)
+    map_test262_tests_to_web_features(cmd_cfg, feature_map)
     write_manifest_file(path, feature_map)
 
     return 0

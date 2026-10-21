@@ -19,6 +19,9 @@ jobs:
         with:
           repository: tc39/test262
           path: test262-spec
+      - name: Install Test262 web-features dependencies
+        continue-on-error: true
+        run: pip install -r test262-spec/tools/web-features/requirements.txt
       - name: Copy Test262 tests to WPT and Create PR
         run: wpt/tools/ci/update-test262.sh --push $(pwd)/test262-spec
         env:

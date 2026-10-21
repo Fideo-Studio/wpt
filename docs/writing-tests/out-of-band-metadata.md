@@ -228,3 +228,13 @@ rules:
 
 The `*` pattern will not match `c.html` in this context because that test file
 has already been matched by a preceding rule.
+
+### Test262 tests
+
+Tests vendored from [Test262](https://github.com/tc39/test262) into
+`third_party/test262/` are not classified by `WEB_FEATURES.yml` files.
+Test262 maintains its own mapping to web-features, and the weekly Test262 sync
+generates a manifest from it at the vendored commit and commits it as
+`third_party/test262/WEB_FEATURES_MANIFEST.json`. Its test paths are translated
+to WPT test URLs and merged into WPT's `WEB_FEATURES_MANIFEST`. Changes to the
+classification of these tests should be made upstream in Test262.

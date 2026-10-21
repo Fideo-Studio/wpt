@@ -7,7 +7,8 @@ from unittest.mock import ANY, Mock, call, mock_open, patch
 
 import pytest
 
-from ..manifest import create_parser, find_all_test_files_in_dir, main, map_tests_to_web_features, write_manifest_file, CmdConfig
+from ..manifest import (create_parser, find_all_test_files_in_dir, main, map_test262_tests_to_web_features,
+                        map_tests_to_web_features, write_manifest_file, CmdConfig)
 from ..web_feature_map import WebFeatureToTestsDirMapper, WebFeaturesMap
 from ...metadata.webfeatures.schema import WEB_FEATURES_YML_FILENAME
 from ...manifest.sourcefile import SourceFile
@@ -178,6 +179,66 @@ def test_map_tests_to_web_features_recursive(
     assert mock_mapper.call_count == 5
 
 
+def write_test262_test(repo_root, path, flags=None):
+    full_path = repo_root / "third_party" / "test262" / path
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    frontmatter = "/*---\ndescription: test\n"
+    if flags:
+        frontmatter += f"flags: [{', '.join(flags)}]\n"
+    frontmatter += "---*/\n"
+    full_path.write_text(frontmatter)
+
+
+def write_test262_web_features_manifest(repo_root, data):
+    manifest_path = repo_root / "third_party" / "test262" / "WEB_FEATURES_MANIFEST.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps({"version": 1, "data": data}))
+
+
+def test_map_tests_to_web_features_skips_test262(tmp_path):
+    (tmp_path / WEB_FEATURES_YML_FILENAME).write_text('rules:\n- "**": [javascript]\n')
+    (tmp_path / "dir").mkdir()
+    (tmp_path / "dir" / "test.window.js").write_text("")
+    write_test262_test(tmp_path, os.path.join("test", "a.js"))
+
+    result = WebFeaturesMap()
+    map_tests_to_web_features(CmdConfig(str(tmp_path), "/"), "", result)
+
+    assert result.to_dict() == {"javascript": ["/dir/test.window.html"]}
+
+
+def test_map_test262_tests_to_web_features(tmp_path):
+    write_test262_test(tmp_path, os.path.join("test", "a.js"))
+    write_test262_test(tmp_path, os.path.join("test", "b.js"), ["module"])
+    write_test262_test(tmp_path, os.path.join("test", "c.js"), ["onlyStrict"])
+    write_test262_test(tmp_path, os.path.join("test", "d_FIXTURE.js"))
+    write_test262_web_features_manifest(tmp_path, {
+        "array": ["test/a.js", "./test/b.js"],
+        "javascript": ["test/a.js", "test/c.js", "test/d_FIXTURE.js", "test/missing.js"],
+    })
+
+    result = WebFeaturesMap()
+    map_test262_tests_to_web_features(CmdConfig(str(tmp_path), "/"), result)
+
+    assert result.to_dict() == {
+        "array": [
+            "/third_party/test262/test/a.test262.html",
+            "/third_party/test262/test/b.test262-module.html",
+        ],
+        "javascript": [
+            "/third_party/test262/test/a.test262.html",
+            "/third_party/test262/test/c.test262.strict.html",
+        ],
+    }
+
+
+def test_map_test262_tests_to_web_features_without_manifest(tmp_path):
+    result = WebFeaturesMap()
+    map_test262_tests_to_web_features(CmdConfig(str(tmp_path), "/"), result)
+
+    assert result.to_dict() == {}
+
+
 def test_parser_with_path_provided_abs_path():
     parser = create_parser()
     args = parser.parse_args(["--path", f"{os.path.abspath(os.sep)}manifest-path"])
@@ -228,11 +289,13 @@ def test_valid_schema():
         os.path.join(os.sep, "test_path", "WEB_FEATURES_MANIFEST.json")
     ),
 ])
+@patch("tools.web_features.manifest.map_test262_tests_to_web_features")
 @patch("tools.web_features.manifest.map_tests_to_web_features")
 @patch("tools.web_features.manifest.write_manifest_file")
 def test_main(
         mock_write_manifest_file,
         mock_map_tests_to_web_features,
+        mock_map_test262_tests_to_web_features,
         main_kwargs,
         expected_repo_root,
         expected_path):
@@ -249,6 +312,7 @@ def test_main(
     mock_map_tests_to_web_features.side_effect = fake_map_tests_to_web_features
     main(**main_kwargs)
     mock_map_tests_to_web_features.assert_called_once_with(CmdConfig(repo_root=expected_repo_root, url_base="/"), "", ANY)
+    mock_map_test262_tests_to_web_features.assert_called_once_with(CmdConfig(repo_root=expected_repo_root, url_base="/"), ANY)
     mock_write_manifest_file.assert_called_once()
     args = mock_write_manifest_file.call_args
     path = args[0][0]
