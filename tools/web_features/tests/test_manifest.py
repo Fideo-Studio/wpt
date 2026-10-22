@@ -232,6 +232,22 @@ def test_map_test262_tests_to_web_features(tmp_path):
     }
 
 
+@pytest.mark.parametrize("contents", [
+    "not json",
+    json.dumps([]),
+    json.dumps({"version": 1}),
+    json.dumps({"version": 1, "data": {"array": 1}}),
+])
+def test_map_test262_tests_to_web_features_invalid_manifest(tmp_path, contents):
+    write_test262_test(tmp_path, os.path.join("test", "a.js"))
+    (tmp_path / "third_party" / "test262" / "WEB_FEATURES_MANIFEST.json").write_text(contents)
+
+    result = WebFeaturesMap()
+    map_test262_tests_to_web_features(CmdConfig(str(tmp_path), "/"), result)
+
+    assert result.to_dict() == {}
+
+
 def test_map_test262_tests_to_web_features_without_manifest(tmp_path):
     result = WebFeaturesMap()
     map_test262_tests_to_web_features(CmdConfig(str(tmp_path), "/"), result)

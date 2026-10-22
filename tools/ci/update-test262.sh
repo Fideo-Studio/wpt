@@ -48,7 +48,8 @@ rsync "${RSYNC_OPTS[@]}" "$SPEC_DIR/test/" "$TEST_DEST/"
 # Generate the web-features manifest, keeping the previous one and its revision on failure
 WEB_FEATURES_MANIFEST="$TEST262_DEST/WEB_FEATURES_MANIFEST.json"
 WEB_FEATURES_REV=$(sed -n 's/^web_features_rev = "\(.*\)"$/\1/p' "$TEST262_DEST/vendored.toml" 2>/dev/null || true)
-if (cd "$SPEC_DIR" && python3 tools/web-features/lint.py --manifest "$WEB_FEATURES_MANIFEST.tmp"); then
+if (cd "$SPEC_DIR" && python3 tools/web-features/lint.py --manifest "$WEB_FEATURES_MANIFEST.tmp") &&
+    python3 tools/ci/check_test262_web_features.py "$WEB_FEATURES_MANIFEST.tmp"; then
     mv "$WEB_FEATURES_MANIFEST.tmp" "$WEB_FEATURES_MANIFEST"
     WEB_FEATURES_REV="$LATEST_SHA"
 else

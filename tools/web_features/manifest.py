@@ -172,13 +172,16 @@ def map_test262_tests_to_web_features(cmd_cfg: CmdConfig, result: WebFeaturesMap
         logger.warning("No Test262 web-features manifest found at %s", manifest_path)
         return
 
-    with open(manifest_path) as f:
-        test262_manifest = json.load(f)
-
     path_to_feature_ids: Dict[str, List[str]] = {}
-    for feature_id, paths in test262_manifest["data"].items():
-        for path in paths:
-            path_to_feature_ids.setdefault(os.path.normpath(path), []).append(feature_id)
+    try:
+        with open(manifest_path) as f:
+            test262_manifest = json.load(f)
+        for feature_id, paths in test262_manifest["data"].items():
+            for path in paths:
+                path_to_feature_ids.setdefault(os.path.normpath(path), []).append(feature_id)
+    except (AttributeError, KeyError, TypeError, ValueError) as e:
+        logger.warning("Skipping invalid Test262 web-features manifest at %s: %s", manifest_path, e)
+        return
 
     for path, feature_ids in sorted(path_to_feature_ids.items()):
         rel_file_path = os.path.join(TEST262_DIR, path)
