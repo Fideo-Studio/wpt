@@ -19,6 +19,10 @@ jobs:
         with:
           repository: tc39/test262
           path: test262-spec
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
       - name: Install Test262 web-features dependencies
         continue-on-error: true
         run: pip install -r test262-spec/tools/web-features/requirements.txt
