@@ -1,0 +1,2 @@
+rules:
+- atomics-wait-async.https.any.js: [atomics-wait-async]

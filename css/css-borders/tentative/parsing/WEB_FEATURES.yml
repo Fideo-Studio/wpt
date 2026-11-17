@@ -1,4 +1,5 @@
 rules:
+- border-shape-*: [border-shape]
 - border-block-*-radius-*: []
 - border-inline-*-radius-*: []
 - border-*-radius-*: [border-radius]

@@ -2,6 +2,7 @@ rules:
 - layer-*: [cascade-layers]
 - at-scope-*: [scope]
 - scope-*: [scope]
+- revert-rule-*: [revert-rule]
 - revert-val-*: [revert-value]
 - all-prop-unset-color.html: [unset-value, all]
 - all-prop-unset-visited.html: [unset-value, all]

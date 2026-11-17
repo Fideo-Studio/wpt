@@ -1,4 +1,5 @@
 rules:
+- scroll-axis-lock-*: [scroll-axis-lock]
 - overflow-clip-margin*: [overflow-clip-margin]
 - scroll-markers*: [scroll-markers]
 - scroll-button*: [scroll-buttons]
