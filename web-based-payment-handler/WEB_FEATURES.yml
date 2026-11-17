@@ -1,2 +1,2 @@
 rules:
-- "**": [web-based-payment-handler]
+- "**": [payment-handler]
