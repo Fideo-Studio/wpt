@@ -1,3 +1,4 @@
 rules:
 - border-radius-greater-than-width.html: [border-radius]
 - border-width-rounding.tentative.html: [borders]
+- border-shape-absolute-coords-shape.tentative.html: [border-shape]
