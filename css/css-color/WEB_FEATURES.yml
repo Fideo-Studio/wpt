@@ -15,6 +15,7 @@ rules:
 - t31-color-currentColor-b.xht: [currentcolor]
 - lab-*: [lab]
 - lch-*: [lab]
+- light-dark-image*: [light-dark-image]
 - light-dark-*: [light-dark]
 - oklab-*: [oklab]
 - oklch-*: [oklab]
