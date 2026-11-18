@@ -1,4 +1,5 @@
 rules:
+- alpha-color-*: [alpha]
 - "*-color-mix-*": [color-mix]
 - color-mix-out-of-gamut.html: [color-mix]
 - relative-*: [relative-color]
