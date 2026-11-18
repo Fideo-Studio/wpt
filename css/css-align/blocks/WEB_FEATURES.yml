@@ -3,3 +3,5 @@ rules:
 - justify-self-widgets.html: [justify-self-block]
 - justify-self-normal-1.html: [justify-self-block]
 - justify-items-anonymous.html: [justify-self-block]
+- justify-self-*: [justify-self-block]
+- safe-justify-self-*: [justify-self-block]
