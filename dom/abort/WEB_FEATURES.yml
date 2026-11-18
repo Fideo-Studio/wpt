@@ -1,3 +1,5 @@
 rules:
 - abort-signal-any.any.js: [abortsignal-any, aborting]
+- timeout.any.js: [abortsignal-timeout, aborting]
+- abort-signal-timeout.html: [abortsignal-timeout, aborting]
 - "**": [aborting]
